@@ -1,10 +1,9 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ServerFilesController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ServerFilesController;
-
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -24,11 +23,9 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-
-
+Route::get('{path}', [App\Http\Controllers\FileProxyController::class, 'handle'])
+    ->where('path', '.*');
 
 Route::get('/files', [ServerFilesController::class, 'index'])->name('files.index');
 Route::get('/files/download', [ServerFilesController::class, 'download'])->name('files.download');
-
-
 require __DIR__.'/auth.php';

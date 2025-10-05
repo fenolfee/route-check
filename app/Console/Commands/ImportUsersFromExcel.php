@@ -171,7 +171,7 @@ class ImportUsersFromExcel extends Command
 
                 continue;
             }
-
+            $attributes['role'] = 'user';
             try {
                 // try using Eloquent create if possible
                 $user = User::create($attributes);
