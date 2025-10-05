@@ -23,9 +23,10 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-Route::get('{path}', [App\Http\Controllers\FileProxyController::class, 'handle'])
-    ->where('path', '.*');
+
 
 Route::get('/files', [ServerFilesController::class, 'index'])->name('files.index');
 Route::get('/files/download', [ServerFilesController::class, 'download'])->name('files.download');
 require __DIR__.'/auth.php';
+Route::get('{path}', [App\Http\Controllers\FileProxyController::class, 'handle'])
+    ->where('path', '.*');
