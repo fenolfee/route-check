@@ -44,8 +44,7 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                 Имя</th>
                             <th
                                 class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">
@@ -53,8 +52,7 @@
                             <th
                                 class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">
                                 Изменён</th>
-                            <th
-                                class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                 Действия</th>
                         </tr>
                     </thead>
@@ -97,6 +95,9 @@
                                             class="inline-flex items-center px-2.5 py-1.5 rounded-md border hover:bg-gray-50">
                                             Открыть
                                         </a>
+                                        <a href="{{ route('files.access.edit', ['path' => $item['rel']]) }}"
+                                            class="px-2.5 py-1.5 rounded-md border bg-white hover:bg-gray-50">Доступ</a>
+
                                     @else
                                         <a href="{{ route('files.download', ['file' => $item['rel']]) }}"
                                             class="inline-flex items-center px-2.5 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">

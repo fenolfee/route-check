@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\DirectoryAccessController;
+use App\Http\Controllers\FileProxyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServerFilesController;
 use App\Http\Controllers\UserController;
@@ -23,10 +25,19 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-
-
 Route::get('/files', [ServerFilesController::class, 'index'])->name('files.index');
 Route::get('/files/download', [ServerFilesController::class, 'download'])->name('files.download');
 require __DIR__.'/auth.php';
-Route::get('{path}', [App\Http\Controllers\FileProxyController::class, 'handle'])
-    ->where('path', '.*');
+
+
+Route::middleware(['web', 'dir.access'])->group(function () {
+
+    Route::get('/files/access', [DirectoryAccessController::class, 'edit'])->name('files.access.edit');
+    Route::post('/files/access', [DirectoryAccessController::class, 'update'])->name('files.access.update');
+});
+
+// прокси файлов тоже через проверку доступа
+Route::get('/file-proxy/iap/{path}', [FileProxyController::class, 'handle'])
+    ->where('path', '.*')
+    ->middleware('dir.access')
+    ->name('files.proxy');
