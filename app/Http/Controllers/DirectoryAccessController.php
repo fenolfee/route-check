@@ -13,8 +13,8 @@ class DirectoryAccessController extends Controller
 
     public function edit(Request $request)
     {
-        
-        $rel = trim((string)$request->query('path', ''), "/\\");
+
+        $rel = trim((string) $request->query('path', ''), '/\\');
         $rule = DirectoryAccessRule::firstOrNew(['path' => $rel], [
             'access' => 'closed',
             'trusted_subnets' => [],
@@ -28,16 +28,17 @@ class DirectoryAccessController extends Controller
 
     public function update(Request $request)
     {
+        dd($request->all());
         $data = $request->validate([
-            'path'   => ['required','string'],
-            'access' => ['required', Rule::in(['open','trusted','closed'])],
-            'trusted_subnets' => ['nullable','string'], // comma/space/line-separated
+            'path' => ['required', 'string'],
+            'access' => ['required', Rule::in(['open', 'trusted', 'closed'])],
+            'trusted_subnets' => ['nullable', 'string'], // comma/space/line-separated
         ]);
 
         $subnets = $this->parseSubnets($data['trusted_subnets'] ?? '');
 
         $rule = DirectoryAccessRule::updateOrCreate(
-            ['path' => trim($data['path'], "/\\")],
+            ['path' => trim($data['path'], '/\\')],
             [
                 'access' => $data['access'],
                 'trusted_subnets' => $subnets,
@@ -53,7 +54,8 @@ class DirectoryAccessController extends Controller
     protected function parseSubnets(string $raw): array
     {
         $parts = preg_split('/[\s,;]+/u', trim($raw));
-        $parts = array_values(array_filter($parts, fn($v) => $v !== ''));
+        $parts = array_values(array_filter($parts, fn ($v) => $v !== ''));
+
         return $parts;
     }
 }

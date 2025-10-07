@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\DirectoryAccessRule;
+use App\Models\TrustedSubnet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\IpUtils;
@@ -16,7 +17,11 @@ class DirectoryAccessResolver
         $this->root = $this->norm($this->root);
     }
 
-    public function root(): string { return $this->root; }
+
+    public function root(): string
+    {
+        return $this->root;
+    }
 
     /** Вернёт относительный путь (от корня) для абсолютного */
     public function toRel(string $abs): string
@@ -35,7 +40,7 @@ class DirectoryAccessResolver
             $parts = explode('/', $rel);
             $acc = '';
             foreach ($parts as $p) {
-                $acc = ltrim($acc.'/'.$p, '/');
+                $acc = ltrim($acc . '/' . $p, '/');
                 $candidates[] = $acc;
             }
             $candidates = array_reverse($candidates); // сначала самый глубокий
@@ -55,18 +60,40 @@ class DirectoryAccessResolver
         ];
     }
 
-    public function isIpTrusted(Request $req, array $subnets): bool
+    public function isIpTrusted(\Illuminate\Http\Request $req, array $dirSubnets): bool
     {
-        if (empty($subnets)) return false;
-        // IpUtils принимает массив CIDR/масок
-        return IpUtils::checkIp($req->ip(), $subnets);
+        $ip = $req->ip();
+        $all = array_values(array_unique(array_filter(array_merge(
+            $this->globalTrustedSubnets(),     // ← глобальные из trusted_subnets
+            $dirSubnets ?? []                  // ← из directory_access_rules.trusted_subnets
+        ))));
+        foreach ($all as $cidr) {
+            if (IpUtils::checkIp($ip, $cidr)) {  // ← ВОТ ТУТ проверка попадания IP в CIDR
+                return true;
+            }
+        }
+        return false;
     }
+
 
     /** Нормализация слэшей */
     protected function norm(string $p): string
     {
-        $p = str_replace('\\','/',$p);
-        $p = preg_replace('#/+#','#/',$p);
-        return rtrim($p,'/');
+        $p = str_replace('\\', '/', $p);
+        $p = preg_replace('#/+#', '#/', $p);
+        return rtrim($p, '/');
     }
+
+    protected function globalTrustedSubnets(): array
+    {
+        static $cache;
+        if ($cache !== null)
+            return $cache;
+        $cache = TrustedSubnet::query()
+            ->where('is_enabled', true)
+            ->pluck('cidr')
+            ->all();
+        return $cache;
+    }
+
 }
