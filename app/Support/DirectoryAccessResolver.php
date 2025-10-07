@@ -51,7 +51,7 @@ class DirectoryAccessResolver
             ->get()
             ->sortByDesc(fn($r) => strlen($r->path))
             ->first();
-
+            
         // по-умолчанию: closed
         return [
             'path' => $rule->path ?? '',
@@ -80,8 +80,8 @@ class DirectoryAccessResolver
     protected function norm(string $p): string
     {
         $p = str_replace('\\', '/', $p);
-        $p = preg_replace('#/+#', '#/', $p);
-        return rtrim($p, '/');
+        $p = preg_replace('#/+#', '/', $p);
+        return trim($p, '/');
     }
 
     protected function globalTrustedSubnets(): array

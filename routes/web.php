@@ -24,15 +24,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::post('/', [UserController::class, 'store'])->name('users.store');
     });
+    Route::get('/files', [ServerFilesController::class, 'index'])->name('files.index');
+    Route::get('/files/download', [ServerFilesController::class, 'download'])->name('files.download');
 });
 
-Route::get('/files', [ServerFilesController::class, 'index'])->name('files.index');
-Route::get('/files/download', [ServerFilesController::class, 'download'])->name('files.download');
 require __DIR__ . '/auth.php';
 
 
-Route::middleware(['web', 'dir.access'])->group(function () {
-
+Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/files/access', [DirectoryAccessController::class, 'edit'])->name('files.access.edit');
     Route::post('/files/access', [DirectoryAccessController::class, 'update'])->name('files.access.update');
 });

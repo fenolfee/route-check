@@ -2,37 +2,36 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\DirectoryAccessResolver;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Str;
 
 class FileProxyController extends Controller
 {
-    public function handle($path)
+    public function handle(Request $request, string $path)
     {
-        // твоя замена iap->/mnt
-        $fullPath = str_replace('iap', '/mnt', $path);
-
-        // (опционально) нормализация и защита от выхода из корня
-        $resolver = app(DirectoryAccessResolver::class);
-        $root = $resolver->root();
-        $fullPath = str_replace('\\','/',$fullPath);
-
-        if (!Str::startsWith($fullPath, $root)) {
-            // Не даём выходить из корня
-            abort(403, 'Недопустимый путь');
-        }
+        $root = rtrim(env('FILEBROWSER_ROOT', '/mnt/pl'), '/'); // /mnt/pl
+        $urlPath = ltrim($path, '/');           // например: "pl/red_kn/201202/1812_god.pdf" или "red_kn/201202/.."
+        // если путь начинается с "pl/", срезаем (корень уже /mnt/pl)
+        $rel = Str::startsWith($urlPath, 'pl/') ? substr($urlPath, 3) : $urlPath; // red_kn/201202/1812_god.pdf
+        $fullPath = $this->normalize("$root/$rel");
+        logger()->info('FileProxy map', compact('root', 'urlPath', 'rel', 'fullPath'));
 
         if (! File::exists($fullPath)) {
             abort(404, 'Файл не найден');
         }
-
-        if (str_ends_with(Str::lower($fullPath), '.pdf')) {
-            abort(403, 'PDF запрещён нахрен');
+        /*
+        if (Str::endsWith(Str::lower($fullPath), '.pdf')) {
+            abort(403, 'PDF запрещён');
         }
+        */
+        return Response::file($fullPath, ['Cache-Control' => 'public, max-age=3600']);
+    }
 
-        return Response::file($fullPath);
+    private function normalize(string $p): string
+    {
+        $p = str_replace('\\', '/', $p);
+        return preg_replace('#/+#', '/', $p);
     }
 }
