@@ -16,7 +16,10 @@ class DirectoryAccessResolver
         $this->root = $this->norm($this->root);
     }
 
-    public function root(): string { return $this->root; }
+    public function root(): string
+    {
+        return $this->root;
+    }
 
     /** Вернёт относительный путь (от корня) для абсолютного */
     public function toRel(string $abs): string
@@ -35,7 +38,7 @@ class DirectoryAccessResolver
             $parts = explode('/', $rel);
             $acc = '';
             foreach ($parts as $p) {
-                $acc = ltrim($acc.'/'.$p, '/');
+                $acc = ltrim($acc . '/' . $p, '/');
                 $candidates[] = $acc;
             }
             $candidates = array_reverse($candidates); // сначала самый глубокий
@@ -46,7 +49,7 @@ class DirectoryAccessResolver
             ->get()
             ->sortByDesc(fn($r) => strlen($r->path))
             ->first();
-
+            
         // по-умолчанию: closed
         return [
             'path' => $rule->path ?? '',
@@ -57,7 +60,8 @@ class DirectoryAccessResolver
 
     public function isIpTrusted(Request $req, array $subnets): bool
     {
-        if (empty($subnets)) return false;
+        if (empty($subnets))
+            return false;
         // IpUtils принимает массив CIDR/масок
         return IpUtils::checkIp($req->ip(), $subnets);
     }
@@ -65,8 +69,9 @@ class DirectoryAccessResolver
     /** Нормализация слэшей */
     protected function norm(string $p): string
     {
-        $p = str_replace('\\','/',$p);
-        $p = preg_replace('#/+#','#/',$p);
-        return rtrim($p,'/');
+        $p = str_replace('\\', '/', $p);
+        $p = preg_replace('#/+#', '/', $p);
+        return trim($p, '/');
     }
+
 }

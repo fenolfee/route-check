@@ -17,7 +17,7 @@ class DirectoryAccessController extends Controller
         $rel = trim((string)$request->query('path', ''), "/\\");
         $rule = DirectoryAccessRule::firstOrNew(['path' => $rel], [
             'access' => 'closed',
-            'trusted_subnets' => [],
+
         ]);
 
         return view('files.access', [
@@ -28,10 +28,10 @@ class DirectoryAccessController extends Controller
 
     public function update(Request $request)
     {
+    
         $data = $request->validate([
             'path'   => ['required','string'],
             'access' => ['required', Rule::in(['open','trusted','closed'])],
-            'trusted_subnets' => ['nullable','string'], // comma/space/line-separated
         ]);
 
         $subnets = $this->parseSubnets($data['trusted_subnets'] ?? '');
@@ -44,7 +44,7 @@ class DirectoryAccessController extends Controller
                 'user_id' => auth()->id(),
             ]
         );
-
+        dd($rule);
         return redirect()
             ->route('files.index', ['path' => $rule->path])
             ->with('success', 'Настройки доступа сохранены.');

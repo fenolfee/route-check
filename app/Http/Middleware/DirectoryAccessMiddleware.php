@@ -10,7 +10,9 @@ use Illuminate\Support\Str;
 
 class DirectoryAccessMiddleware
 {
-    public function __construct(protected DirectoryAccessResolver $resolver) {}
+    public function __construct(protected DirectoryAccessResolver $resolver)
+    {
+    }
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -43,31 +45,32 @@ class DirectoryAccessMiddleware
         return $next($request);
     }
 
-    protected function guessRelPath(Request $request): string
+    protected function guessRelPath(\Illuminate\Http\Request $request): string
     {
-        // 1) маршруты file browser: ?path=...
+        // 1) из UI (браузер каталога)
         if ($request->has('path')) {
-            return trim((string)$request->query('path'), '/\\');
+            return $this->norm((string) $request->query('path')); // уже относительный
         }
 
-        // 2) file-proxy/{path} (wildcard)
-        if ($request->route() && $request->route()->parameter('path')) {
-            // path может быть абсолютным — переводим в относительный от корня
-            $param = (string)$request->route()->parameter('path');
-            $param = str_replace('iap','/mnt',$param); // твоя замена, если надо оставить
-            // если это абсолютный путь — конвертируем в относительный
-            if (Str::startsWith($param, ['/','\\'])) {
-                $rel = ltrim(Str::after($param, $this->resolver->root()), '/');
-            } else {
-                $rel = $param;
-            }
-            // если это файл — берём каталог файла
-            if (str_contains($rel, '/')) {
-                return trim(dirname($rel), '/\\');
-            }
-            return trim($rel, '/\\');
+        // 2) из file-proxy/{path} (наш случай)
+        $param = (string) $request->route('path');           // что пришло после /iap/
+        $rel = ltrim(str_replace('\\', '/', $param), '/');     // "pl/red_kn/201202/1812_god.pdf" или "red_kn/..."
+
+        // срежем ведущий "pl/" если есть (корень ФС уже /mnt/pl)
+        if (Str::startsWith($rel, 'pl/')) {
+            $rel = substr($rel, 3);
         }
 
-        return '';
+        // для проверки директорий берём папку файла (dirname)
+        $relDir = trim(dirname($rel), '/\\');                // "red_kn/201202"
+        return $this->norm($relDir);
     }
+
+    private function norm(string $p): string
+    {
+        $p = str_replace('\\', '/', $p);
+        $p = preg_replace('#/+#', '/', $p);
+        return trim($p, '/');
+    }
+
 }
