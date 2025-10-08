@@ -28,7 +28,6 @@ class DirectoryAccessController extends Controller
 
     public function update(Request $request)
     {
-        dd($request->all());
         $data = $request->validate([
             'path' => ['required', 'string'],
             'access' => ['required', Rule::in(['open', 'trusted', 'closed'])],
@@ -45,7 +44,7 @@ class DirectoryAccessController extends Controller
                 'user_id' => auth()->id(),
             ]
         );
-        dd($rule);
+      
         return redirect()
             ->route('files.index', ['path' => $rule->path])
             ->with('success', 'Настройки доступа сохранены.');

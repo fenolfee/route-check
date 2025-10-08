@@ -49,7 +49,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->group(function () {
 
 // прокси файлов тоже через проверку доступа
 // если сюда зайдет кто-то кроме олега этот маршрут всегда должен внизу барахтаться, от греха подальше
-Route::get('/file-proxy/iap/{path}', [FileProxyController::class, 'handle'])
+Route::get('/iap/{path}', [FileProxyController::class, 'handle'])
     ->where('path', '.*')
     ->middleware('dir.access')
     ->name('files.proxy');

@@ -34,6 +34,7 @@ class DirectoryAccessResolver
     /** Найти самую "близкую" (глубокую) подходящую праву для пути */
     public function findRule(string $rel): array
     {
+        
         $rel = trim($this->norm($rel), '/');
         $candidates = [''];
         if ($rel !== '') {

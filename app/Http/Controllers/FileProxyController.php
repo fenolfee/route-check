@@ -11,13 +11,14 @@ class FileProxyController extends Controller
 {
     public function handle(Request $request, string $path)
     {
+       
         $root = rtrim(env('FILEBROWSER_ROOT', '/mnt/pl'), '/'); // /mnt/pl
         $urlPath = ltrim($path, '/');           // например: "pl/red_kn/201202/1812_god.pdf" или "red_kn/201202/.."
         // если путь начинается с "pl/", срезаем (корень уже /mnt/pl)
         $rel = Str::startsWith($urlPath, 'pl/') ? substr($urlPath, 3) : $urlPath; // red_kn/201202/1812_god.pdf
         $fullPath = $this->normalize("$root/$rel");
         logger()->info('FileProxy map', compact('root', 'urlPath', 'rel', 'fullPath'));
-
+        
         if (! File::exists($fullPath)) {
             abort(404, 'Файл не найден');
         }
