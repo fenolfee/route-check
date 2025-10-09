@@ -1,0 +1,5 @@
+@extends('errors.minimal')
+@section('title', 'Страница не найдена')
+@section('code', '404')
+@section('headline', 'Страница не найдена')
+@section('message', 'Кажется, вы заблудились. Такой страницы тут нет.')

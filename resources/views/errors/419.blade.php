@@ -1,0 +1,5 @@
+@extends('errors.minimal')
+@section('title', 'Сессия истекла')
+@section('code', '419')
+@section('headline', 'Сессия истекла')
+@section('message', 'Обновите страницу и попробуйте снова.')

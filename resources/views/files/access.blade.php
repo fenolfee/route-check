@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('content')
@@ -29,13 +28,16 @@
 
                 <label class="flex items-center gap-3">
                     <input type="radio" name="access" value="trusted" @checked(old('access', $rule->access) === 'trusted')>
-                    <span>Открыта из доверенных подсетей; остальным — через логин</span>
+                    <span>Открыта из доверенных подсетей; из остальных — только по логину
+                        <br> старше 50 лет открыты (если последняя папка это год)
+                    </span>
                 </label>
 
                 <label class="flex items-center gap-3">
                     <input type="radio" name="access" value="closed" @checked(old('access', $rule->access) === 'closed')>
-                    <span>Закрытая (только авторизованным)</span>
+                    <span>Закрытая (доступ запрещён всем, код 403)</span>
                 </label>
+
                 @error('access')
                     <div class="text-sm text-red-600">{{ $message }}</div>
                 @enderror
@@ -48,7 +50,7 @@
                 <textarea id="trusted_subnets" name="trusted_subnets" rows="4"
                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     placeholder="192.168.0.0/16
-10.0.0.0/8">{{ old('trusted_subnets', implode("\n", $rule->trusted_subnets ?? [])) }}</textarea>
+    10.0.0.0/8">{{ old('trusted_subnets', implode("\n", $rule->trusted_subnets ?? [])) }}</textarea>
                 <p class="mt-1 text-xs text-gray-500">Пример: 192.168.1.0/24, 10.0.0.0/8</p>
             </div>
 

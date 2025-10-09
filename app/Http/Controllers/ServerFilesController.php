@@ -22,42 +22,74 @@ class ServerFilesController extends Controller
 
     public function index(Request $request)
     {
-        // относительный путь внутри base, например: "", "docs", "docs/sub"
         $rel = trim($request->query('dir', ''), "/\\");
         [$absDir, $rel] = $this->resolveSafeDir($rel);
 
         if (!is_dir($absDir)) {
             abort(404, 'Каталог не найден');
         }
+        $historicYears = (int) config('filebrowser.historic.years', 50);
+        $historicEnabled = (bool) config('filebrowser.historic.enabled', true);
 
-        // Сканируем директорию
         $entries = array_diff(scandir($absDir), ['.', '..']);
+        $resolver = app(\App\Support\DirectoryAccessResolver::class);
 
-        $items = collect($entries)->map(function ($name) use ($absDir, $rel) {
+        // сразу строим items + наклеиваем правила через map
+        $items = collect($entries)->map(function ($name) use ($absDir, $rel, $resolver) {
             $abs = $absDir . DIRECTORY_SEPARATOR . $name;
             $isDir = is_dir($abs);
-            $size  = $isDir ? null : (is_file($abs) ? filesize($abs) : null);
-            $mtime = filemtime($abs) ?: null;
-
-            return [
-                'name'   => $name,
+            $item = [
+                'name' => $name,
                 'is_dir' => $isDir,
-                'size'   => $size,
-                'mtime'  => $mtime,
-                'rel'    => ltrim($rel . '/' . $name, '/'),
+                'size' => $isDir ? null : (is_file($abs) ? filesize($abs) : null),
+                'mtime' => @filemtime($abs) ?: null,
+                'rel' => ltrim($rel . '/' . $name, '/'),
             ];
+            // Для файла — правило папки; для папки — правило самой папки
+            $targetRel = $isDir ? $item['rel'] : trim(dirname($item['rel']), '/\\');
+            $rule = $resolver->findRule($targetRel);
+            // Добавляем метаданные доступа
+            $item['access'] = $rule['access'];                 // open|trusted|closed
+            $item['rule_path'] = $rule['matched_path'] ?? '';     // у какого предка нашли
+            $item['inherited'] = !empty($rule['inherited']);
+            $item['trusted_dir_count'] = count($rule['trusted_subnets'] ?? []);
+            $item['trusted_global_count'] = count($rule['global_subnets'] ?? []);
+
+            return $item;
+        });
+        //проверяем на то что старше 70
+        $items = $items->map(function ($it) use ($historicEnabled, $historicYears) {
+            if ($historicEnabled && !empty($it['is_dir'])) {
+                $last = basename($it['rel']);
+                if (preg_match('/^\d{4}(\d{2})?$/', $last)) {
+                    $year = (int) substr($last, 0, 4);
+                    $month = strlen($last) >= 6 ? max(1, min(12, (int) substr($last, 4, 2))) : 1;
+                    try {
+                        $start = \Carbon\Carbon::create($year, $month, 1, 0, 0, 0, 'UTC');
+                        $it['historic_open'] = \Carbon\Carbon::now('UTC')->greaterThanOrEqualTo($start->copy()->addYears($historicYears));
+                    } catch (\Throwable $e) {
+                        $it['historic_open'] = false;
+                    }
+                } else {
+                    $it['historic_open'] = false;
+                }
+            } else {
+                $it['historic_open'] = false;
+            }
+            return $it;
         });
 
-        // Сортировка: сначала папки по имени, потом файлы по имени
-        $items = $items->sortBy(fn($x) => ($x['is_dir'] ? '0_' : '1_') . Str::lower($x['name']))->values();
+        // Сортировка: папки, потом файлы; внутри — по имени (без учёта регистра)
+        $items = $items
+            ->sortBy(fn($x) => ($x['is_dir'] ? '0_' : '1_') . Str::lower($x['name']))
+            ->values();
 
-        // Хлебные крошки
         $breadcrumbs = $this->breadcrumbs($rel);
 
         return view('files.index', [
-            'basePath'    => $this->basePath,
-            'currentRel'  => $rel,
-            'items'       => $items,
+            'basePath' => $this->basePath,
+            'currentRel' => $rel,
+            'items' => $items,
             'breadcrumbs' => $breadcrumbs,
         ]);
     }
@@ -65,7 +97,8 @@ class ServerFilesController extends Controller
     public function download(Request $request): BinaryFileResponse
     {
         $relFile = trim($request->query('file', ''), "/\\");
-        if ($relFile === '') abort(404);
+        if ($relFile === '')
+            abort(404);
 
         [$abs, $rel] = $this->resolveSafePath($relFile);
 
@@ -125,12 +158,11 @@ class ServerFilesController extends Controller
         $parts = $rel === '' ? [] : explode('/', $rel);
         $acc = [];
         $crumbs[] = ['label' => 'Корень', 'rel' => '']; // ссылка на /files без dir
-
         foreach ($parts as $p) {
             $acc[] = $p;
             $crumbs[] = [
                 'label' => $p,
-                'rel'   => implode('/', $acc),
+                'rel' => implode('/', $acc),
             ];
         }
         return $crumbs;

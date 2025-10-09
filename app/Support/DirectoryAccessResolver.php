@@ -34,30 +34,31 @@ class DirectoryAccessResolver
     /** Найти самую "близкую" (глубокую) подходящую праву для пути */
     public function findRule(string $rel): array
     {
-        
-        $rel = trim($this->norm($rel), '/');
+        $rel = trim($this->norm($rel), '/');               // целевая директория
         $candidates = [''];
         if ($rel !== '') {
-            $parts = explode('/', $rel);
             $acc = '';
-            foreach ($parts as $p) {
-                $acc = ltrim($acc . '/' . $p, '/');
-                $candidates[] = $acc;
+            foreach (explode('/', $rel) as $seg) {
+                if ($seg === '' || $seg === '.')
+                    continue;
+                $acc = $acc === '' ? $seg : "{$acc}/{$seg}";
+                $candidates[] = $acc;                       // ['', 'red_kn', 'red_kn/201201']
             }
-            $candidates = array_reverse($candidates); // сначала самый глубокий
         }
 
-        $rule = DirectoryAccessRule::query()
-            ->whereIn('path', $candidates)
-            ->get()
-            ->sortByDesc(fn($r) => strlen($r->path))
+        $rule = \App\Models\DirectoryAccessRule::query()
+            ->whereIn('path', array_unique($candidates))
+            ->orderByRaw('LENGTH(path) DESC')              // самая глубокая
             ->first();
-            
-        // по-умолчанию: closed
+
+        $matched = $rule->path ?? '';                      // путь правила, которое сработало
         return [
-            'path' => $rule->path ?? '',
+            'path' => $matched,                // совместимость со старым кодом
+            'matched_path' => $matched,                // явное имя источника правила
+            'inherited' => $matched !== '' && $this->norm($matched) !== $rel,
             'access' => $rule->access ?? 'closed',
             'trusted_subnets' => $rule?->trusted_subnets ?? [],
+            'global_subnets' => $this->globalTrustedSubnets(), // из БД глобальные CIDR
         ];
     }
 

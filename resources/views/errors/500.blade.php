@@ -1,0 +1,5 @@
+@extends('errors.minimal')
+@section('title', 'Внутренняя ошибка сервера')
+@section('code', '500')
+@section('headline', 'Что-то пошло не так')
+@section('message', 'Мы уже разбираемся. Попробуйте позже.')

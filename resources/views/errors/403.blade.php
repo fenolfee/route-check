@@ -1,0 +1,5 @@
+@extends('errors.minimal')
+@section('title', 'Доступ запрещён')
+@section('code', '403')
+@section('headline', 'Доступ запрещён')
+@section('message', 'У вас нет прав для просмотра этой страницы.')
